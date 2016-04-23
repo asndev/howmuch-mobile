@@ -7,29 +7,44 @@ import React, {
   TextInput,
   TouchableHighlight
 } from 'react-native';
+
+import Button from 'apsl-react-native-button'
+import { fetchActivityList } from '../actions';
 import { connect } from 'react-redux';
-import ActivityList from './ActivityList';
-import { fetchActivityLists, createActivity } from '../actions';
 
-
-class ActivityLists extends React.Component {
+class ActivityList extends Component {
 
   componentWillMount() {
-    this.props.dispatch(fetchActivityLists());
+    this.props.dispatch(fetchActivityList(this.props.listId));
   }
 
   constructor(props) {
     super(props);
     const ds = new ListView.DataSource({
-      rowHasChanged: (r1, r2) => r1.id !== r2.id
+      rowHasChanged: (r1, r2) => r1 !== r2
     });
 
-    const rows = this.props.activitylists.data.map(e => {
-      return {
-        id: e._id,
-        name: e.name
-      };
-    });
+    const listId = this.props.listId;
+    const activities = (this.props.activitylists &&
+      this.props.activitylists.activities[listId]) || {};
+
+    let rows = [];
+    if (activities && activities.data) {
+      const days = Object.keys(activities.data)
+        .map(month => {
+          return activities.data[month].data;
+        })
+        .map(e => {
+          return Object.keys(e).map(k => e[k].data);
+        });
+
+
+      rows = days
+        // worst code ever.
+        .reduce((e,c) => e.concat(c))
+        .reduce((e,c) => e.concat(c))
+        .map(e => { return { name: new Date(e.timestamp).toUTCString() }});
+    }
 
     this.state = {
       dataSource: ds.cloneWithRows(rows),
@@ -37,8 +52,9 @@ class ActivityLists extends React.Component {
   }
 
   renderRow(rowData) {
+
     return (
-      <TouchableHighlight onPress={() => this.onRowPress(rowData)}>
+      <TouchableHighlight onPress={() => {}}>
         <View>
           <View style={styles.row}>
             <Text style={styles.text}>
@@ -50,16 +66,8 @@ class ActivityLists extends React.Component {
     );
   }
 
-  onRowPress(rowData) {
-    this.props.navigator.push({
-      title: rowData.name,
-      component: ActivityList,
-      rightButtonTitle: 'Add Activity',
-      onRightButtonPress: () => this.props.dispatch(createActivity(rowData.id)),
-      passProps: {
-        listId: rowData.id
-      }
-    });
+  buttonClicked() {
+    console.log('button clicked');
   }
 
   render() {
@@ -77,6 +85,13 @@ class ActivityLists extends React.Component {
 
 }
 
+function mapStateToProps(state) {
+  const { activitylists } = state;
+  return {
+    activitylists
+  };
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1
@@ -92,15 +107,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#CCCCCC',
   },
   text: {
-    flex: 1,
-  },
+    flex: 1
+  }
 });
 
-function mapStateToProps(state) {
-  const { activitylists } = state;
-  return {
-    activitylists
-  };
-}
-
-export default connect(mapStateToProps)(ActivityLists);
+export default connect(mapStateToProps)(ActivityList);

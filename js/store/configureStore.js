@@ -19,7 +19,7 @@ const createAppStore = applyMiddleware(thunk, logger)(createStore);
 
 const configureStore = (onComplete) => {
   const store = autoRehydrate()(createAppStore)(reducers);
-  persistStore(store, {storage: AsyncStorage}, onComplete);
+  persistStore(store, {storage: AsyncStorage}, onComplete);//.purgeAll();
   if (isDebuggingInChrome) {
     window.store = store;
   }
